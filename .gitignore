@@ -1,0 +1,9 @@
+# Written by Claude Code when it loads a mod.
+*/.claude-plugin/types/
+node_modules/
+.DS_Store
+
+# Personal mods kept out of the repo.
+session-roles/
+sweep-watch/
+tokens/

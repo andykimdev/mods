@@ -1,0 +1,1 @@
+{ "name": "pixel-cat", "version": "0.3.0", "description": "A running, jumping pixel cat in the working row, now and then in random colors", "types": "./types/index.d.ts" }
