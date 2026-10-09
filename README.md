@@ -8,8 +8,12 @@
 
 ## pixel-cat
 
-A pixel cat takes the place of the orange working dots in the desktop app. Every turn it plays
-its moves in a new order, and about one turn in four it wears new colors.
+A pixel cat replaces the orange working dots in the desktop app. Every turn it plays its moves
+in a new order.
+
+<p align="center">
+  <img src="assets/in-app.png" width="250" alt="The cat on a Bash tool row and the Working row in the desktop app">
+</p>
 
 <table align="center">
   <tr>
@@ -26,3 +30,6 @@ its moves in a new order, and about one turn in four it wears new colors.
 </table>
 
 To install it, see [pixel-cat/README.md](pixel-cat/README.md).
+
+About one turn in four, the cat shows up in a different color scheme. It has never explained
+where it keeps the other coats.
