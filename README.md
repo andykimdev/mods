@@ -1,7 +1,28 @@
-# mods
+<p align="center">
+  <img src="pixel-cat/frames/loop.svg" width="180" alt="The pixel cat playing through every move">
+</p>
 
-Mods for Claude Code. Each folder is one mod with its own README.
+<h1 align="center">mods</h1>
 
-## Mods
+<p align="center">Small mods for Claude Code.</p>
 
-- **`pixel-cat`:** Shows an animated pixel cat in place of the working dots in the desktop app Code tab. See [pixel-cat/README.md](pixel-cat/README.md) to install it.
+## pixel-cat
+
+A pixel cat takes the place of the orange working dots in the desktop app. Every turn it plays
+its moves in a new order, and about one turn in four it wears new colors.
+
+<table align="center">
+  <tr>
+    <td align="center"><img src="pixel-cat/frames/run_03.svg" width="64" alt="Run"><br>run</td>
+    <td align="center"><img src="pixel-cat/frames/jump_05.svg" width="64" alt="Jump"><br>jump</td>
+    <td align="center"><img src="pixel-cat/frames/pounce_04.svg" width="64" alt="Pounce"><br>pounce</td>
+    <td align="center"><img src="pixel-cat/frames/turn_04.svg" width="64" alt="Turn"><br>turn</td>
+    <td align="center"><img src="pixel-cat/frames/sleep_01.svg" width="64" alt="Nap"><br>nap</td>
+    <td align="center"><img src="pixel-cat/frames/heart_01.svg" width="64" alt="Heart"><br>heart</td>
+    <td align="center"><img src="pixel-cat/frames/tail_01.svg" width="64" alt="Tail wag"><br>tail</td>
+    <td align="center"><img src="pixel-cat/frames/tilt_02.svg" width="64" alt="Head tilt"><br>tilt</td>
+    <td align="center"><img src="pixel-cat/frames/bow_01.svg" width="64" alt="Play bow"><br>bow</td>
+  </tr>
+</table>
+
+To install it, see [pixel-cat/README.md](pixel-cat/README.md).
