@@ -1,11 +1,15 @@
 /**
- * Test how pixel-cat shares turns with pixel-cherie, the /pet choice, and that its frames fit one Svg.
+ * Test how pixel-cat shares turns with other pets, the /pet choice, and that its frames fit one Svg.
+ *
+ * Special Notes:
+ *
+ * - Written by the pet-new skill. Every pet mod keeps the same tests apart from the frames import.
  */
 
 import { describe, expect, test } from 'claude-code/testing'
 
 import { CAT_FRAMES } from '../hooks/moves'
-import { PET_ALT_PREFIX, hasPet, ownerOf, parseChoice, petReply, pick } from '../hooks/pets'
+import { PETS, PET_ALT_PREFIX, hasPet, ownerOf, parseChoice, petReply, pick } from '../hooks/pets'
 
 // The longest Svg source the desktop draws.
 const SVG_SOURCE_LIMIT = 131_072
@@ -14,7 +18,9 @@ const SVG_SOURCE_LIMIT = 131_072
 const FRAME_OVERHEAD = 400
 const SVG_OVERHEAD = 400
 
-const petSvg = { type: 'Svg', props: { source: '<svg/>', alt: `${PET_ALT_PREFIX}Cherie the puppy` } }
+const MODS = PETS.map(p => p.mod)
+const first = PETS[0]
+const petSvg = { type: 'Svg', props: { source: '<svg/>', alt: `${PET_ALT_PREFIX}the cat` } }
 const otherSvg = { type: 'Svg', props: { source: '<svg/>', alt: 'Loading' } }
 const row = (...children: unknown[]) => ({ type: 'Box', children })
 
@@ -23,20 +29,20 @@ describe('ownerOf', () => {
     expect(ownerOf('turn-42')).toBe(ownerOf('turn-42'))
   })
 
-  test('gives each pet some of 200 turn ids', async () => {
-    const owners = new Set(Array.from({ length: 200 }, (_, i) => ownerOf(`turn-${i}`)))
+  test('gives every pet some of 300 turn ids', async () => {
+    const owners = new Set(Array.from({ length: 300 }, (_, i) => ownerOf(`turn-${i}`)))
 
-    expect([...owners].sort()).toEqual(['pixel-cat', 'pixel-cherie'])
+    expect([...owners].sort()).toEqual([...MODS].sort())
   })
 
   test('picks a pet for an empty turn id', async () => {
-    expect(['pixel-cat', 'pixel-cherie']).toContain(ownerOf(''))
+    expect(MODS).toContain(ownerOf(''))
   })
 })
 
 describe('pick', () => {
   test('returns the chosen pet whatever the turn id', async () => {
-    expect([pick('pixel-cherie', 'turn-1'), pick('pixel-cherie', 'turn-2')]).toEqual(['pixel-cherie', 'pixel-cherie'])
+    expect([pick('pixel-cat', 'turn-1'), pick('pixel-cat', 'turn-2')]).toEqual(['pixel-cat', 'pixel-cat'])
   })
 
   test('falls back to the turn id pick for random', async () => {
@@ -45,24 +51,27 @@ describe('pick', () => {
 })
 
 describe('parseChoice', () => {
-  test('reads each word in any case and spacing', async () => {
-    expect(['cat', ' Cherie ', 'RANDOM'].map(parseChoice)).toEqual(['pixel-cat', 'pixel-cherie', 'random'])
+  test('reads every pet word and random in any case and spacing', async () => {
+    const words = [...PETS.map(p => ` ${p.word.toUpperCase()} `), 'Random']
+
+    expect(words.map(parseChoice)).toEqual([...MODS, 'random'])
   })
 
   test('rejects an empty, unknown or doubled word', async () => {
-    expect(['', 'dog', 'cat cherie'].map(parseChoice)).toEqual([undefined, undefined, undefined])
+    expect(['', 'dragon', `${first.word} ${first.word}`].map(parseChoice)).toEqual([undefined, undefined, undefined])
   })
 })
 
 describe('petReply', () => {
   test('confirms a valid choice', async () => {
-    expect(petReply('cherie', 'pixel-cherie')).toBe('Now showing Cherie every turn.')
+    expect(petReply(first.word, first.mod)).toBe(`Now showing ${first.name} every turn.`)
   })
 
-  test('shows usage and the current choice for an unknown word', async () => {
-    expect(petReply('dog', 'random')).toBe(
-      'Usage: /pet cat, /pet cherie or /pet random. Now showing the cat or Cherie, picked each turn.',
-    )
+  test('names every pet in the usage line for an unknown word', async () => {
+    const reply = petReply('dragon', first.mod)
+
+    expect([...PETS.map(p => reply.includes(`/pet ${p.word}`)), reply.endsWith(`Now showing ${first.name} every turn.`)])
+      .toEqual([...PETS.map(() => true), true])
   })
 })
 
