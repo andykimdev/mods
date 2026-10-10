@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="pixel-cat/frames/loop.svg" width="160" alt="The pixel cat playing through every move">
+  <img src="pixel-cat/frames/loop.svg" width="160" alt="The cat playing through every move">
   <img src="pixel-cherie/frames/loop.svg" width="160" alt="Cherie playing through every move">
 </p>
 
@@ -9,11 +9,10 @@
 
 ## pixel-cat
 
-A pixel cat replaces the orange working dots in the desktop app. Every turn it plays its 9 moves
-in a new order, and about one turn in four it gets a random color scheme.
+The cat, a gray tabby, replaces the orange working dots in the desktop app. The cat plays 9 moves in a new order every turn. About one turn in four it also gets a random color scheme.
 
 <p align="center">
-  <img src="pixel-cat/assets/in-app.png" width="250" alt="The cat on a Bash tool row and the Working row in the desktop app">
+  <img src="pixel-cat/assets/in-app.png" width="249" alt="The cat on a Bash tool row and the Working row in the desktop app">
 </p>
 
 <table align="center">
@@ -34,8 +33,7 @@ To install it, see [pixel-cat/README.md](pixel-cat/README.md).
 
 ## pixel-cherie
 
-Cherie, a pixel poodle puppy, replaces the orange working dots in the desktop app. Every turn she
-plays her 4 moves in a new order.
+Cherie, a pixel poodle puppy, replaces the orange working dots in the desktop app. Cherie plays 4 moves in a new order every turn.
 
 <p align="center">
   <img src="pixel-cherie/assets/in-app.png" width="193" alt="Cherie on the Working row in the desktop app">
@@ -52,7 +50,6 @@ plays her 4 moves in a new order.
 
 To install it, see [pixel-cherie/README.md](pixel-cherie/README.md).
 
-## Both pets
+## Choosing a pet
 
-With both mods loaded, each turn shows the cat or Cherie, about half the turns each. Type
-`/pet cat`, `/pet cherie` or `/pet random` in the desktop app to choose for the rest of the session.
+With several pet mods loaded, each turn shows one of them. Type `/pet cat`, `/pet cherie` or `/pet random` in the desktop app to choose for the rest of the session.

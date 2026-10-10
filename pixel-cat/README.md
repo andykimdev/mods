@@ -1,9 +1,9 @@
 # pixel-cat
 
-A Claude Code mod that replaces the orange working dots with a pixel cat, a gray tabby. It runs, jumps, pounces, turns around, naps, sends a heart, wags its tail, tilts its head and play bows, in a new random order every turn. About one turn in four it also gets a random color scheme.
+A Claude Code mod that replaces the orange working dots with the cat, a gray tabby. The cat runs, jumps, pounces, turns around, naps, sends a heart, wags its tail, tilts its head and play bows, in a new random order every turn. About one turn in four it also gets a random color scheme.
 
 <p align="center">
-  <img src="assets/in-app.png" width="250" alt="The cat on a Bash tool row and the Working row in the desktop app">
+  <img src="assets/in-app.png" width="249" alt="The cat on a Bash tool row and the Working row in the desktop app">
 </p>
 
 ## Where the cat shows
@@ -15,13 +15,13 @@ The desktop app still draws its own dots in the step header while a tool runs. M
 
 ## Choosing a pet
 
-With [pixel-cherie](../pixel-cherie) also loaded, each turn shows either the cat or Cherie, about half the turns each. Either mod works alone.
+With [pixel-cherie](../pixel-cherie) also loaded, each turn shows one of the loaded pets. Each mod works alone.
 
 To choose for the rest of the session, type one of these in the desktop app:
 
 - **`/pet cat`:** Shows the cat every turn.
 - **`/pet cherie`:** Shows Cherie every turn.
-- **`/pet random`:** Picks the cat or Cherie each turn. This is the default.
+- **`/pet random`:** Picks a pet each turn. This is the default.
 
 ## Requirements
 
@@ -37,7 +37,7 @@ To choose for the rest of the session, type one of these in the desktop app:
 4. Run `claude plugin validate ~/.claude/mods/pixel-cat` and check that it ends with Validation passed.
 5. Restart Claude Code. Sessions that were already open do not load new mods.
 
-Example `env` block with both pets:
+Example `env` block with every pet:
 
 ```json
 {
@@ -59,9 +59,10 @@ Example `env` block with both pets:
 
 ## Files
 
+- **`pet.json`:** Describes the pet for the generated files.
 - **`hooks/register.tsx`:** Draws the cat and picks the move order and colors each turn.
 - **`hooks/moves.ts`:** Holds the 44 animation frames and the frames each move plays.
-- **`hooks/pets.ts`:** Picks the cat or Cherie for each turn and reads `/pet`. pixel-cherie keeps an identical copy.
+- **`hooks/pets.ts`:** Picks the pet for each turn and reads `/pet`. Every pet mod keeps an identical copy.
 - **`types/index.d.ts`:** Declares the one value the mod keeps for the session.
 - **`tests/pets.test.ts`:** Checks the turn picker, `/pet` and the frame size.
 - **`frames/loop.svg`:** Previews every move in one loop. Open it in a browser.
