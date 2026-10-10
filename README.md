@@ -1,5 +1,6 @@
 <p align="center">
-  <img src="pixel-cat/frames/loop.svg" width="180" alt="The pixel cat playing through every move">
+  <img src="pixel-cat/frames/loop.svg" width="160" alt="The pixel cat playing through every move">
+  <img src="pixel-cherie/frames/loop.svg" width="160" alt="Cherie playing through every move">
 </p>
 
 <h1 align="center">mods</h1>
@@ -8,11 +9,11 @@
 
 ## pixel-cat
 
-A pixel cat replaces the orange working dots in the desktop app. Every turn it plays its moves
-in a new order.
+A pixel cat replaces the orange working dots in the desktop app. Every turn it plays its 9 moves
+in a new order, and about one turn in four it gets a random color scheme.
 
 <p align="center">
-  <img src="assets/in-app.png" width="250" alt="The cat on a Bash tool row and the Working row in the desktop app">
+  <img src="pixel-cat/assets/in-app.png" width="250" alt="The cat on a Bash tool row and the Working row in the desktop app">
 </p>
 
 <table align="center">
@@ -31,17 +32,14 @@ in a new order.
 
 To install it, see [pixel-cat/README.md](pixel-cat/README.md).
 
-About one turn in four, the cat shows up in a different color scheme. It has never explained
-where it keeps the other coats.
-
 ## pixel-cherie
 
-<p align="center">
-  <img src="pixel-cherie/frames/loop.svg" width="180" alt="Cherie playing through every move">
-</p>
-
 Cherie, a pixel poodle puppy, replaces the orange working dots in the desktop app. Every turn she
-plays her moves in a new order. With pixel-cat also loaded, each turn shows one of the two.
+plays her 4 moves in a new order.
+
+<p align="center">
+  <img src="pixel-cherie/assets/in-app.png" width="193" alt="Cherie on the Working row in the desktop app">
+</p>
 
 <table align="center">
   <tr>
@@ -53,3 +51,8 @@ plays her moves in a new order. With pixel-cat also loaded, each turn shows one 
 </table>
 
 To install it, see [pixel-cherie/README.md](pixel-cherie/README.md).
+
+## Both pets
+
+With both mods loaded, each turn shows the cat or Cherie, about half the turns each. Type
+`/pet cat`, `/pet cherie` or `/pet random` in the desktop app to choose for the rest of the session.

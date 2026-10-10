@@ -1,6 +1,10 @@
 # pixel-cherie
 
-A Claude Code mod that replaces the orange working dots with Cherie, a pixel poodle puppy. Cherie plays, sits, rests and cuddles a toy bunny, in a new random order every turn.
+A Claude Code mod that replaces the orange working dots with Cherie, a pixel poodle puppy. She plays, sits, rests and cuddles a toy bunny, in a new random order every turn.
+
+<p align="center">
+  <img src="assets/in-app.png" width="193" alt="Cherie on the Working row in the desktop app">
+</p>
 
 ## Where Cherie shows
 
@@ -9,9 +13,15 @@ A Claude Code mod that replaces the orange working dots with Cherie, a pixel poo
 
 The desktop app still draws its own dots in the step header while a tool runs. Mods cannot change that header.
 
-## Sharing turns with pixel-cat
+## Choosing a pet
 
-With [pixel-cat](../pixel-cat) also loaded, each turn shows either Cherie or the cat, about half the turns each. Either mod works alone.
+With [pixel-cat](../pixel-cat) also loaded, each turn shows either the cat or Cherie, about half the turns each. Either mod works alone.
+
+To choose for the rest of the session, type one of these in the desktop app:
+
+- **`/pet cat`:** Shows the cat every turn.
+- **`/pet cherie`:** Shows Cherie every turn.
+- **`/pet random`:** Picks the cat or Cherie each turn. This is the default.
 
 ## Requirements
 
@@ -43,12 +53,18 @@ Example `env` block with both pets:
 2. Delete `~/.claude/mods/pixel-cherie`.
 3. Restart Claude Code.
 
+## Development
+
+- **Tests:** Run `claude plugin test ~/.claude/mods/pixel-cherie`. Checks the turn picker, `/pet` and the frame size.
+- **Frames:** Run `python3 tools/build_frames.py <folder>` from `~/.claude/mods/pixel-cherie`. Rebuilds `hooks/moves.ts` and `frames/` from a folder of 20 SVG frames.
+
 ## Files
 
 - **`hooks/register.tsx`:** Draws Cherie and picks the move order each turn.
-- **`hooks/moves.ts`:** Holds the 20 animation frames and the frames each move plays. Written by `tools/build_frames.py`.
-- **`hooks/pets.ts`:** Picks Cherie or the cat for each turn. pixel-cat keeps an identical copy.
+- **`hooks/moves.ts`:** Holds the 20 animation frames and the frames each move plays.
+- **`hooks/pets.ts`:** Picks the cat or Cherie for each turn and reads `/pet`. pixel-cat keeps an identical copy.
 - **`types/index.d.ts`:** Declares the one value the mod keeps for the session.
-- **`tests/pets.test.ts`:** Checks the turn picker and that all frames fit one drawing. Run `claude plugin test ~/.claude/mods/pixel-cherie`.
-- **`frames/loop.svg`:** A preview of every move in one loop. Open it in a browser.
-- **`tools/build_frames.py`:** Rebuilds `hooks/moves.ts` and `frames/` from a folder of 20 SVG frames. Run `python3 tools/build_frames.py <folder>` from this folder.
+- **`tests/pets.test.ts`:** Checks the turn picker, `/pet` and the frame size.
+- **`tools/build_frames.py`:** Rebuilds `hooks/moves.ts` and `frames/` from a folder of 20 SVG frames.
+- **`frames/loop.svg`:** Previews every move in one loop. Open it in a browser.
+- **`assets/in-app.png`:** Shows Cherie in the desktop app.

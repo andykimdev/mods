@@ -1,6 +1,10 @@
 # pixel-cat
 
-A Claude Code mod that replaces the orange working dots with an animated pixel cat. The cat runs, jumps, pounces, turns around, naps, sends a heart, wags its tail, tilts its head and play bows, in a new random order every turn. About one turn in four it also gets a random color scheme.
+A Claude Code mod that replaces the orange working dots with a pixel cat, a gray tabby. It runs, jumps, pounces, turns around, naps, sends a heart, wags its tail, tilts its head and play bows, in a new random order every turn. About one turn in four it also gets a random color scheme.
+
+<p align="center">
+  <img src="assets/in-app.png" width="250" alt="The cat on a Bash tool row and the Working row in the desktop app">
+</p>
 
 ## Where the cat shows
 
@@ -9,9 +13,15 @@ A Claude Code mod that replaces the orange working dots with an animated pixel c
 
 The desktop app still draws its own dots in the step header while a tool runs. Mods cannot change that header.
 
-## Sharing turns with pixel-cherie
+## Choosing a pet
 
 With [pixel-cherie](../pixel-cherie) also loaded, each turn shows either the cat or Cherie, about half the turns each. Either mod works alone.
+
+To choose for the rest of the session, type one of these in the desktop app:
+
+- **`/pet cat`:** Shows the cat every turn.
+- **`/pet cherie`:** Shows Cherie every turn.
+- **`/pet random`:** Picks the cat or Cherie each turn. This is the default.
 
 ## Requirements
 
@@ -27,12 +37,12 @@ With [pixel-cherie](../pixel-cherie) also loaded, each turn shows either the cat
 4. Run `claude plugin validate ~/.claude/mods/pixel-cat` and check that it ends with Validation passed.
 5. Restart Claude Code. Sessions that were already open do not load new mods.
 
-Example `env` block with no other mods:
+Example `env` block with both pets:
 
 ```json
 {
   "env": {
-    "CLAUDE_CODE_PLUGIN_DIRS": "/Users/yourname/.claude/mods/pixel-cat"
+    "CLAUDE_CODE_PLUGIN_DIRS": "/Users/yourname/.claude/mods/pixel-cat:/Users/yourname/.claude/mods/pixel-cherie"
   }
 }
 ```
@@ -43,10 +53,16 @@ Example `env` block with no other mods:
 2. Delete `~/.claude/mods/pixel-cat`.
 3. Restart Claude Code.
 
+## Development
+
+- **Tests:** Run `claude plugin test ~/.claude/mods/pixel-cat`. Checks the turn picker, `/pet` and the frame size.
+
 ## Files
 
 - **`hooks/register.tsx`:** Draws the cat and picks the move order and colors each turn.
 - **`hooks/moves.ts`:** Holds the 44 animation frames and the frames each move plays.
-- **`hooks/pets.ts`:** Picks the cat or Cherie for each turn when [pixel-cherie](../pixel-cherie) is also loaded.
+- **`hooks/pets.ts`:** Picks the cat or Cherie for each turn and reads `/pet`. pixel-cherie keeps an identical copy.
 - **`types/index.d.ts`:** Declares the one value the mod keeps for the session.
-- **`frames/loop.svg`:** A preview of every move in one loop. Open it in a browser.
+- **`tests/pets.test.ts`:** Checks the turn picker, `/pet` and the frame size.
+- **`frames/loop.svg`:** Previews every move in one loop. Open it in a browser.
+- **`assets/in-app.png`:** Shows the cat in the desktop app.
