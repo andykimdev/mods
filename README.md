@@ -33,3 +33,23 @@ To install it, see [pixel-cat/README.md](pixel-cat/README.md).
 
 About one turn in four, the cat shows up in a different color scheme. It has never explained
 where it keeps the other coats.
+
+## pixel-cherie
+
+<p align="center">
+  <img src="pixel-cherie/frames/loop.svg" width="180" alt="Cherie playing through every move">
+</p>
+
+Cherie, a pixel poodle puppy, replaces the orange working dots in the desktop app. Every turn she
+plays her moves in a new order. With pixel-cat also loaded, each turn shows one of the two.
+
+<table align="center">
+  <tr>
+    <td align="center"><img src="pixel-cherie/frames/play_00.svg" width="64" alt="Play"><br>play</td>
+    <td align="center"><img src="pixel-cherie/frames/sit_00.svg" width="64" alt="Sit"><br>sit</td>
+    <td align="center"><img src="pixel-cherie/frames/rest_00.svg" width="64" alt="Rest"><br>rest</td>
+    <td align="center"><img src="pixel-cherie/frames/bunny_00.svg" width="64" alt="Bunny"><br>bunny</td>
+  </tr>
+</table>
+
+To install it, see [pixel-cherie/README.md](pixel-cherie/README.md).
