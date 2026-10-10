@@ -5,15 +5,43 @@
   "kind": "a pixel poodle puppy",
   "summary": "plays, sits, rests and cuddles a toy bunny",
   "moves": [
-    {"name": "play", "frames": 5},
-    {"name": "sit", "frames": 5},
-    {"name": "rest", "frames": 5},
-    {"name": "bunny", "frames": 5}
+    {
+      "name": "play",
+      "frames": 10
+    },
+    {
+      "name": "sit",
+      "frames": 10
+    },
+    {
+      "name": "rest",
+      "frames": 10
+    },
+    {
+      "name": "bunny",
+      "frames": 10
+    }
   ],
   "covers": [
-    ["play_00", "Play", "play"],
-    ["sit_00", "Sit", "sit"],
-    ["rest_00", "Rest", "rest"],
-    ["bunny_00", "Bunny", "bunny"]
+    [
+      "play_00",
+      "Play",
+      "play"
+    ],
+    [
+      "sit_00",
+      "Sit",
+      "sit"
+    ],
+    [
+      "rest_00",
+      "Rest",
+      "rest"
+    ],
+    [
+      "bunny_00",
+      "Bunny",
+      "bunny"
+    ]
   ]
 }
