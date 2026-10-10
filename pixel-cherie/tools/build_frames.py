@@ -4,7 +4,7 @@ Build a pixel pet's frame module and preview SVGs from a folder of square pixel 
 Purpose:
 
 - Read each frame, remove the white background at the edge, and crop all frames to one box.
-- Merge the closest colors until every frame fits one desktop Svg, then write the mod files.
+- Merge the closest colors until every move fits one desktop Svg, then write the mod files.
 
 Special Notes:
 
@@ -25,11 +25,15 @@ WHITE_MIN_SUM = 3 * 235
 HOLD = 3
 FRAME_SECONDS = 0.1
 
-# The longest Svg source the desktop draws, less room for each frame's animate tag.
+# The longest Svg source the desktop draws, and generous room for each frame's tags and the outer svg.
 SVG_SOURCE_LIMIT = 131_072
 FRAME_OVERHEAD = 400
+SVG_OVERHEAD = 400
 
-RUN = re.compile(r'<path fill="(#[0-9a-fA-F]{6})" d="M(\d+) (\d+)h(\d+)v1H\d+z"/>')
+PATH = re.compile(r'<path fill="(#[0-9a-fA-F]{6})" d="([^"]*)"\s*/>')
+
+# One filled rectangle: a move, a width, a height, then back to the start, with either separator.
+RECT = re.compile(r"M(\d+)[ ,](\d+)h(\d+)v(\d+)(?:H\d+|h-\d+)z")
 
 Grid = list[list[str | None]]
 
@@ -39,13 +43,14 @@ def read_frame(path: Path) -> Grid:
     Read one SVG frame into a grid of colors.
 
     Args:
-        path: An SVG whose paths each fill one horizontal run of cells.
+        path: An SVG whose paths fill whole cells with rectangles, one path per rectangle or
+            many rectangles in one path, on an optional white background rect.
 
     Returns:
         A row-major grid of lowercase hex colors, None where nothing is drawn.
 
     Raises:
-        ValueError: When the SVG holds a path this reader does not understand.
+        ValueError: When the SVG holds a shape this reader does not understand.
     """
     text = path.read_text()
     box = re.search(r'viewBox="0 0 (\d+) (\d+)"', text)
@@ -54,16 +59,23 @@ def read_frame(path: Path) -> Grid:
         raise ValueError(f"{path}: no viewBox")
 
     width, height = int(box.group(1)), int(box.group(2))
-    runs = RUN.findall(text)
+    paths = PATH.findall(text)
 
-    if len(runs) != text.count("<path"):
-        raise ValueError(f"{path}: {text.count('<path') - len(runs)} paths are not one-row runs")
+    if len(paths) != text.count("<path") or re.search(r"<(?!\?xml|!--|svg|/svg|g|/g|path|rect)", text):
+        raise ValueError(f"{path}: holds shapes other than filled paths")
 
     grid: Grid = [[None] * width for _ in range(height)]
 
-    for color, x, y, run in runs:
-        for i in range(int(run)):
-            grid[int(y)][int(x) + i] = color.lower()
+    for color, d in paths:
+        rects = RECT.findall(d)
+
+        if "".join(RECT.sub("", d).split()):
+            raise ValueError(f"{path}: a {color} path is not made of cell rectangles")
+
+        for x, y, w, h in rects:
+            for row in range(int(y), int(y) + int(h)):
+                for col in range(int(x), int(x) + int(w)):
+                    grid[row][col] = color.lower()
 
     return grid
 
@@ -171,12 +183,13 @@ def encode(grid: Grid, palette: list[str]) -> str:
     return "".join(paths)
 
 
-def fit(grids: list[Grid]) -> tuple[list[Grid], list[str], list[tuple[str, str]]]:
+def fit(grids: list[Grid], moves: list[list[int]]) -> tuple[list[Grid], list[str], list[tuple[str, str]]]:
     """
-    Merge the closest pair of colors, one pair at a time, until all frames fit one Svg.
+    Merge the closest pair of colors, one pair at a time, until every move fits one Svg.
 
     Args:
         grids: Frames as grids of hex colors.
+        moves: The frame indices of each move. register.tsx packs moves into Svgs per turn.
 
     Returns:
         The frames after merging, the palette darkest first, and each merge as (from, into).
@@ -200,7 +213,8 @@ def fit(grids: list[Grid]) -> tuple[list[Grid], list[str], list[tuple[str, str]]
                         counts[c] = counts.get(c, 0) + 1
 
         palette = sorted(counts, key=brightness)
-        total = sum(len(encode(g, palette)) + FRAME_OVERHEAD for g in grids)
+        sizes = [len(encode(g, palette)) + FRAME_OVERHEAD for g in grids]
+        total = max(sum(sizes[k] for k in move) + SVG_OVERHEAD for move in moves)
 
         if total < SVG_SOURCE_LIMIT:
             return grids, palette, merges
@@ -289,11 +303,11 @@ def build(source: Path, mod: Path) -> str:
     if len(paths) != wanted:
         raise ValueError(f"{source}: found {len(paths)} SVGs, pet.json moves take {wanted}")
 
-    grids, palette, merges = fit(crop([remove_background(read_frame(p)) for p in paths]))
-    height, width = len(grids[0]), len(grids[0][0])
-    frames = [encode(g, palette) for g in grids]
     starts = [sum(m["frames"] for m in moves[:i]) for i in range(len(moves))]
     indices = {m["name"]: list(range(s, s + m["frames"])) for m, s in zip(moves, starts)}
+    grids, palette, merges = fit(crop([remove_background(read_frame(p)) for p in paths]), list(indices.values()))
+    height, width = len(grids[0]), len(grids[0][0])
+    frames = [encode(g, palette) for g in grids]
     rows = "".join(f"  '{f}',\n" for f in frames)
 
     (mod / "hooks").mkdir(exist_ok=True)
@@ -319,10 +333,11 @@ def build(source: Path, mod: Path) -> str:
 
     slots = [k for ks in indices.values() for k in ks for _ in range(HOLD)]
     (out / "loop.svg").write_text(svg(width, height, loop(frames, slots), 5))
-    size = sum(len(f) + FRAME_OVERHEAD for f in frames)
+    size = max(sum(len(frames[k]) + FRAME_OVERHEAD for k in ks) + SVG_OVERHEAD for ks in indices.values())
     merged = ", ".join(f"{a} into {b}" for a, b in merges) or "none"
 
-    return f"{len(frames)} frames, {width} x {height}, {len(palette)} colors, about {size} characters, merged {merged}"
+    return (f"{len(frames)} frames, {width} x {height}, {len(palette)} colors, "
+            f"largest move about {size} characters, merged {merged}")
 
 
 if __name__ == "__main__":

@@ -3,20 +3,21 @@
  *
  * Special Notes:
  *
- * - Each turn plays the four moves in a fresh random order.
- * - With pixel-cat also loaded, the turn id picks one pet per turn. See pets.ts.
- * - /pet cat, /pet cherie or /pet random sets which pet draws for the rest of the session.
+ * - Each turn plays the moves in a fresh random order.
+ * - Moves that do not all fit one Svg are split into pages, and a timer swaps the page when it ends.
+ * - With other pet mods loaded, the turn id picks one pet per turn. See pets.ts.
+ * - /pet sets which pet draws for the rest of the session.
  */
 
 import { atom, read, update } from 'claude-code'
-import type { ElementTable, Register, RenderElement } from 'claude-code'
+import type { ElementTable, EngineInterface, Register, RenderElement, Timer } from 'claude-code'
 
 import { CHERIE_FRAMES, CHERIE_HEIGHT, CHERIE_MOVES, CHERIE_WIDTH } from './moves'
 import { PET_ALT_PREFIX, PET_COMMAND, hasPet, parseChoice, petReply, pick } from './pets'
 import type { Choice, Pet } from './pets'
 
 const ME: Pet = 'pixel-cherie'
-const ALT = `${PET_ALT_PREFIX}Cherie the puppy`
+const ALT = `${PET_ALT_PREFIX}Cherie`
 
 const lastTool = atom({ plugin: 'pixel-cherie', key: 'lastTool' } as const, null)
 
@@ -25,7 +26,12 @@ const FRAME_SECONDS = 0.1
 // Each frame is its own pose, so it holds for this many slots to be read.
 const HOLD = 3
 
-// Matches the working row height pixel-cat uses.
+// The longest Svg source the desktop draws, and generous room for each frame's tags and the outer svg.
+const SVG_SOURCE_LIMIT = 131_072
+const FRAME_OVERHEAD = 400
+const SVG_OVERHEAD = 400
+
+// Matches the working row height every pet uses.
 const SPINNER_HEIGHT_PX = 34
 
 // Without an explicit width the interactive frame takes a default width and pushes the label away.
@@ -38,17 +44,45 @@ function random(): number {
 }
 
 /**
- * Lay the moves out as one loop in random order.
+ * Shuffle the moves and pack them, in that order, into pages that each fit one Svg.
  *
  * Returns:
- *     The frame index shown in each slot of the loop.
+ *     Each page as the frame index shown in each of its slots.
+ *
+ * Notes:
+ *     A pet whose frames all fit one Svg gets a single page, so nothing swaps.
  */
-function randomSlots(): number[] {
+function randomPages(): number[][] {
   const shuffled = Object.values(CHERIE_MOVES)
     .map(frames => ({ frames, key: random() }))
     .sort((a, b) => a.key - b.key)
+  const pages: number[][][] = []
+  let size = SVG_OVERHEAD
 
-  return shuffled.flatMap(({ frames }) => frames.flatMap(frame => Array<number>(HOLD).fill(frame)))
+  for (const { frames } of shuffled) {
+    const cost = frames.reduce((sum, k) => sum + (CHERIE_FRAMES[k]?.length ?? 0) + FRAME_OVERHEAD, 0)
+    const last = pages[pages.length - 1]
+
+    if (last && size + cost < SVG_SOURCE_LIMIT) {
+      last.push(frames)
+      size += cost
+    } else {
+      pages.push([frames])
+      size = SVG_OVERHEAD + cost
+    }
+  }
+
+  return pages.map(page => page.flatMap(frames => frames.flatMap(frame => Array<number>(HOLD).fill(frame))))
+}
+
+/**
+ * Build every page of one turn.
+ *
+ * Returns:
+ *     Each page's SVG and how long it plays, in milliseconds.
+ */
+function buildPages(): { svg: string; ms: number }[] {
+  return randomPages().map(slots => ({ svg: buildSvg(slots), ms: slots.length * FRAME_SECONDS * 1000 }))
 }
 
 /**
@@ -101,6 +135,33 @@ function buildSvg(slots: number[]): string {
   )
 }
 
+// The pages of the running turn, the one on show, and the timer that swaps to the next.
+type Pages = { list: { svg: string; ms: number }[]; index: number; swap: Timer | undefined }
+
+/**
+ * Swap to the next page once the current one has played through, and redraw with it.
+ *
+ * Args:
+ *     $: The engine interface of the hook that started the turn.
+ *     pages: The turn's pages, updated in place.
+ */
+function schedule($: EngineInterface, pages: Pages): void {
+  pages.swap?.cancel()
+  pages.swap = undefined
+
+  const current = pages.list[pages.index]
+
+  if (pages.list.length < 2 || current === undefined) {
+    return
+  }
+
+  pages.swap = $.clock.after(current.ms, () => {
+    pages.index = (pages.index + 1) % pages.list.length
+    $.ui.invalidate('ui.render')
+    schedule($, pages)
+  })
+}
+
 // A tool row reads best with the call's own description, as Bash calls carry one.
 function describe(tool: string, input: unknown): string {
   const description = (input as { description?: unknown } | undefined)?.description
@@ -109,7 +170,7 @@ function describe(tool: string, input: unknown): string {
 }
 
 export const register: Register = on => {
-  let svg = buildSvg(randomSlots())
+  const pages: Pages = { list: buildPages(), index: 0, swap: undefined }
 
   // Before the first turn no pet has been picked, so Cherie draws.
   let owner: Pet = ME
@@ -143,14 +204,16 @@ export const register: Register = on => {
 
   // Roll once per turn so the order holds steady while the row redraws.
   on('turn.start', ($, e, next) => {
-    svg = buildSvg(randomSlots())
+    pages.list = buildPages()
+    pages.index = 0
+    schedule($, pages)
     owner = pick(choice, e.turnId)
 
     return next(e)
   })
 
   /**
-   * Draw Cherie, or on the other pet's turn show that pet when it draws beneath.
+   * Draw Cherie, or on another pet's turn show that pet when it draws beneath.
    *
    * Args:
    *     below: Runs the plugins beneath and the engine's own drawing.
@@ -177,7 +240,7 @@ export const register: Register = on => {
 
     return (
       <Box alignItems="center">
-        <Svg source={svg} alt={ALT} width={SPINNER_WIDTH_PX} height={SPINNER_HEIGHT_PX} isInteractive />
+        <Svg source={pages.list[pages.index]?.svg ?? ''} alt={ALT} width={SPINNER_WIDTH_PX} height={SPINNER_HEIGHT_PX} isInteractive />
         <Text dimColor> {label}</Text>
       </Box>
     )
@@ -197,6 +260,9 @@ export const register: Register = on => {
   })
 
   on('turn.complete', async ($, e, next) => {
+    // Nothing draws once the turn ends, so the swaps stop until the next one.
+    pages.swap?.cancel()
+    pages.swap = undefined
     await update($, lastTool, () => null)
 
     return next(e)

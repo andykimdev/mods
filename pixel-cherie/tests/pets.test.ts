@@ -1,5 +1,5 @@
 /**
- * Test how pixel-cherie shares turns with other pets, the /pet choice, and that its frames fit one Svg.
+ * Test how pixel-cherie shares turns with other pets, the /pet choice, and that each move fits one Svg.
  *
  * Special Notes:
  *
@@ -8,7 +8,7 @@
 
 import { describe, expect, test } from 'claude-code/testing'
 
-import { CHERIE_FRAMES } from '../hooks/moves'
+import { CHERIE_FRAMES, CHERIE_MOVES } from '../hooks/moves'
 import { PETS, PET_ALT_PREFIX, hasPet, ownerOf, parseChoice, petReply, pick } from '../hooks/pets'
 
 // The longest Svg source the desktop draws.
@@ -89,8 +89,10 @@ describe('hasPet', () => {
   })
 })
 
-test('every frame together fits one Svg source', async () => {
-  const total = CHERIE_FRAMES.reduce((sum, frame) => sum + frame.length + FRAME_OVERHEAD, SVG_OVERHEAD)
+test('every move fits one Svg source', async () => {
+  const sizes = Object.values(CHERIE_MOVES).map(move =>
+    move.reduce((sum, k) => sum + (CHERIE_FRAMES[k]?.length ?? 0) + FRAME_OVERHEAD, SVG_OVERHEAD),
+  )
 
-  expect(total).toBeLessThan(SVG_SOURCE_LIMIT)
+  expect(sizes.filter(size => size >= SVG_SOURCE_LIMIT)).toEqual([])
 })
