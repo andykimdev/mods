@@ -5,12 +5,18 @@
  *
  * - Each turn plays the moves in a fresh random order, with a run between each two.
  * - About one turn in four the cat gets a random color scheme for that whole turn.
+ * - With pixel-cherie also loaded, the turn id picks one pet per turn. See pets.ts.
  */
 
 import { atom, read, update } from 'claude-code'
-import type { Register } from 'claude-code'
+import type { ElementTable, Register, RenderElement } from 'claude-code'
 
 import { CAT_FRAMES, CAT_HEIGHT, CAT_MOVES, CAT_PALETTE, CAT_WIDTH } from './moves'
+import { PET_ALT_PREFIX, hasPet, ownerOf } from './pets'
+import type { Pet } from './pets'
+
+const ME: Pet = 'pixel-cat'
+const ALT = `${PET_ALT_PREFIX}Pixel cat running`
 
 const lastTool = atom({ plugin: 'pixel-cat', key: 'lastTool' } as const, null)
 
@@ -148,12 +154,50 @@ function describe(tool: string, input: unknown): string {
 export const register: Register = on => {
   let svg = buildSvg(CAT_PALETTE, randomSlots())
 
+  // Before the first turn no pet has been picked, so the cat draws.
+  let owner: Pet = ME
+
   // Roll once per turn so the order and colors hold steady while the row redraws.
   on('turn.start', ($, e, next) => {
     svg = buildSvg(random() < RECOLOR_CHANCE ? randomPalette() : CAT_PALETTE, randomSlots())
+    owner = ownerOf(e.turnId)
 
     return next(e)
   })
+
+  /**
+   * Draw the cat, or on the other pet's turn show that pet when it draws beneath.
+   *
+   * Args:
+   *     below: Runs the plugins beneath and the engine's own drawing.
+   *     label: The text drawn beside the cat.
+   *     table: The desktop's elements.
+   *
+   * Returns:
+   *     The tree to draw.
+   */
+  async function drawOrYield(
+    below: () => Promise<RenderElement>,
+    label: string,
+    table: ElementTable<'desktop'>,
+  ): Promise<RenderElement> {
+    if (owner !== ME) {
+      const tree = await below()
+
+      if (hasPet(tree)) {
+        return tree
+      }
+    }
+
+    const { Box, Svg, Text } = table
+
+    return (
+      <Box alignItems="center">
+        <Svg source={svg} alt={ALT} width={SPINNER_WIDTH_PX} height={SPINNER_HEIGHT_PX} isInteractive />
+        <Text dimColor> {label}</Text>
+      </Box>
+    )
+  }
 
   on('tool.call', async ($, e, next) => {
     await update($, lastTool, () => e.tool_use_id)
@@ -187,15 +231,7 @@ export const register: Register = on => {
       return next(e)
     }
 
-    const { Box, Svg, Text } = $.ui.resolve(e)
-    const label = describe(e.props.tool, e.props.input)
-
-    return (
-      <Box alignItems="center">
-        <Svg source={svg} alt="Pixel cat running" width={SPINNER_WIDTH_PX} height={SPINNER_HEIGHT_PX} isInteractive />
-        <Text dimColor> {label}</Text>
-      </Box>
-    )
+    return drawOrYield(() => next(e), describe(e.props.tool, e.props.input), $.ui.resolve(e))
   })
 
   // Reads, searches and edits fold into one group line, which carries the mark while it is live.
@@ -206,15 +242,7 @@ export const register: Register = on => {
       return next(e)
     }
 
-    const { Box, Svg, Text } = $.ui.resolve(e)
-    const label = describe(latest.tool, latest.input)
-
-    return (
-      <Box alignItems="center">
-        <Svg source={svg} alt="Pixel cat running" width={SPINNER_WIDTH_PX} height={SPINNER_HEIGHT_PX} isInteractive />
-        <Text dimColor> {label}</Text>
-      </Box>
-    )
+    return drawOrYield(() => next(e), describe(latest.tool, latest.input), $.ui.resolve(e))
   })
 
   on('ui.render', { component: 'Spinner' }, ($, e, next) => {
@@ -223,14 +251,6 @@ export const register: Register = on => {
       return next(e)
     }
 
-    const { Box, Svg, Text } = $.ui.resolve(e)
-    const label = `${e.props.message ?? e.props.word}${e.props.suffix}`
-
-    return (
-      <Box alignItems="center">
-        <Svg source={svg} alt="Pixel cat running" width={SPINNER_WIDTH_PX} height={SPINNER_HEIGHT_PX} isInteractive />
-        <Text dimColor> {label}</Text>
-      </Box>
-    )
+    return drawOrYield(() => next(e), `${e.props.message ?? e.props.word}${e.props.suffix}`, $.ui.resolve(e))
   })
 }

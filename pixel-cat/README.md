@@ -9,6 +9,10 @@ A Claude Code mod that replaces the orange working dots with an animated pixel c
 
 The desktop app still draws its own dots in the step header while a tool runs. Mods cannot change that header.
 
+## Sharing turns with pixel-cherie
+
+With [pixel-cherie](../pixel-cherie) also loaded, each turn shows either the cat or Cherie, about half the turns each. Either mod works alone.
+
 ## Requirements
 
 - macOS or Linux.
@@ -43,5 +47,6 @@ Example `env` block with no other mods:
 
 - **`hooks/register.tsx`:** Draws the cat and picks the move order and colors each turn.
 - **`hooks/moves.ts`:** Holds the 44 animation frames and the frames each move plays.
+- **`hooks/pets.ts`:** Picks the cat or Cherie for each turn when [pixel-cherie](../pixel-cherie) is also loaded.
 - **`types/index.d.ts`:** Declares the one value the mod keeps for the session.
 - **`frames/loop.svg`:** A preview of every move in one loop. Open it in a browser.
