@@ -1,0 +1,21 @@
+{
+  "mod": "pixel-cat",
+  "word": "cat",
+  "name": "the cat",
+  "kind": "a gray tabby",
+  "summary": "runs, jumps, pounces, turns around, naps, sends a heart, wags its tail, tilts its head and play bows",
+  "extra": "About one turn in four it also gets a random color scheme.",
+  "picks": "the move order and colors",
+  "covers": [
+    ["run_03", "Run", "run"],
+    ["jump_05", "Jump", "jump"],
+    ["pounce_04", "Pounce", "pounce"],
+    ["turn_04", "Turn", "turn"],
+    ["sleep_01", "Nap", "nap"],
+    ["heart_01", "Heart", "heart"],
+    ["tail_01", "Tail wag", "tail"],
+    ["tilt_02", "Head tilt", "tilt"],
+    ["bow_01", "Play bow", "bow"]
+  ],
+  "screenshot_alt": "The cat on a Bash tool row and the Working row in the desktop app"
+}
