@@ -6,14 +6,15 @@
  * - Each turn plays the moves in a fresh random order, with a run between each two.
  * - About one turn in four the cat gets a random color scheme for that whole turn.
  * - With pixel-cherie also loaded, the turn id picks one pet per turn. See pets.ts.
+ * - /pet cat, /pet cherie or /pet random sets which pet draws for the rest of the session.
  */
 
 import { atom, read, update } from 'claude-code'
 import type { ElementTable, Register, RenderElement } from 'claude-code'
 
 import { CAT_FRAMES, CAT_HEIGHT, CAT_MOVES, CAT_PALETTE, CAT_WIDTH } from './moves'
-import { PET_ALT_PREFIX, hasPet, ownerOf } from './pets'
-import type { Pet } from './pets'
+import { PET_ALT_PREFIX, PET_COMMAND, hasPet, parseChoice, petReply, pick } from './pets'
+import type { Choice, Pet } from './pets'
 
 const ME: Pet = 'pixel-cat'
 const ALT = `${PET_ALT_PREFIX}Pixel cat running`
@@ -157,10 +158,37 @@ export const register: Register = on => {
   // Before the first turn no pet has been picked, so the cat draws.
   let owner: Pet = ME
 
+  // What /pet set for this session.
+  let choice: Choice = 'random'
+
+  on('session.start', async ($, e, next) => {
+    await $.command.register(PET_COMMAND)
+
+    return next(e)
+  })
+
+  on('command.run', { command: 'pet' }, async ($, e, next) => {
+    const parsed = parseChoice(e.args)
+
+    if (parsed !== undefined) {
+      choice = parsed
+
+      // A fixed pet takes the row at once rather than at the next turn.
+      if (parsed !== 'random') {
+        owner = parsed
+      }
+    }
+
+    // The other pet's hook sits beneath and has to hear the choice too.
+    await next(e)
+
+    return { text: petReply(e.args, choice) }
+  })
+
   // Roll once per turn so the order and colors hold steady while the row redraws.
   on('turn.start', ($, e, next) => {
     svg = buildSvg(random() < RECOLOR_CHANCE ? randomPalette() : CAT_PALETTE, randomSlots())
-    owner = ownerOf(e.turnId)
+    owner = pick(choice, e.turnId)
 
     return next(e)
   })

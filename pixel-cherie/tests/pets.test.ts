@@ -1,11 +1,11 @@
 /**
- * Test how pixel-cherie shares turns with pixel-cat and that its frames fit one Svg.
+ * Test how pixel-cherie shares turns with pixel-cat, the /pet choice, and that its frames fit one Svg.
  */
 
 import { describe, expect, test } from 'claude-code/testing'
 
 import { CHERIE_FRAMES } from '../hooks/moves'
-import { PET_ALT_PREFIX, hasPet, ownerOf } from '../hooks/pets'
+import { PET_ALT_PREFIX, hasPet, ownerOf, parseChoice, petReply, pick } from '../hooks/pets'
 
 // The longest Svg source the desktop draws.
 const SVG_SOURCE_LIMIT = 131_072
@@ -31,6 +31,38 @@ describe('ownerOf', () => {
 
   test('picks a pet for an empty turn id', async () => {
     expect(['pixel-cat', 'pixel-cherie']).toContain(ownerOf(''))
+  })
+})
+
+describe('pick', () => {
+  test('returns the chosen pet whatever the turn id', async () => {
+    expect([pick('pixel-cherie', 'turn-1'), pick('pixel-cherie', 'turn-2')]).toEqual(['pixel-cherie', 'pixel-cherie'])
+  })
+
+  test('falls back to the turn id pick for random', async () => {
+    expect(pick('random', 'turn-42')).toBe(ownerOf('turn-42'))
+  })
+})
+
+describe('parseChoice', () => {
+  test('reads each word in any case and spacing', async () => {
+    expect(['cat', ' Cherie ', 'RANDOM'].map(parseChoice)).toEqual(['pixel-cat', 'pixel-cherie', 'random'])
+  })
+
+  test('rejects an empty, unknown or doubled word', async () => {
+    expect(['', 'dog', 'cat cherie'].map(parseChoice)).toEqual([undefined, undefined, undefined])
+  })
+})
+
+describe('petReply', () => {
+  test('confirms a valid choice', async () => {
+    expect(petReply('cherie', 'pixel-cherie')).toBe('Now showing Cherie every turn.')
+  })
+
+  test('shows usage and the current choice for an unknown word', async () => {
+    expect(petReply('dog', 'random')).toBe(
+      'Usage: /pet cat, /pet cherie or /pet random. Now showing the cat or Cherie, picked each turn.',
+    )
   })
 })
 
