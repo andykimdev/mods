@@ -6,7 +6,7 @@ export const CAT_WIDTH = 43
 export const CAT_HEIGHT = 44
 
 // The bead colors the frames use: outline, dark gray, mid gray, light gray, cream, eye.
-export const CAT_PALETTE = ["#25211c", "#46413a", "#827a6c", "#908676", "#dcd2ba", "#d0624c"]
+export const CAT_PALETTE = ["#25211c", "#46413a", "#827a6c", "#908676", "#dcd2ba", "#d0624c"] as const
 
 // Distinct frames, each one stroked path per bead color, drawn on rows offset by half a bead.
 export const CAT_FRAMES = [

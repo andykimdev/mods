@@ -27,7 +27,7 @@ const SPINNER_HEIGHT_PX = 34
 const SPINNER_WIDTH_PX = Math.round((SPINNER_HEIGHT_PX * CAT_WIDTH) / CAT_HEIGHT)
 
 function random(): number {
-  const word = crypto.getRandomValues(new Uint32Array(1))[0]
+  const [word = 0] = crypto.getRandomValues(new Uint32Array(1))
 
   return word / 2 ** 32
 }
@@ -73,16 +73,15 @@ function randomPalette(): string[] {
  *     The frame index shown in each slot of the loop.
  */
 function randomSlots(): number[] {
-  const extras = Object.keys(CAT_MOVES).filter(name => name !== 'run')
+  const run = CAT_MOVES.run ?? []
+  const extras = Object.entries(CAT_MOVES)
+    .filter(([name]) => name !== 'run')
+    .map(([name, frames]) => ({ name, frames, key: random() }))
+    .sort((a, b) => a.key - b.key)
 
-  for (let i = extras.length - 1; i > 0; i--) {
-    const j = Math.floor(random() * (i + 1))
-    ;[extras[i], extras[j]] = [extras[j], extras[i]]
-  }
-
-  return extras.flatMap(name => [
-    ...CAT_MOVES.run,
-    ...CAT_MOVES[name].flatMap(frame => Array(HOLD[name] ?? 1).fill(frame)),
+  return extras.flatMap(({ name, frames }) => [
+    ...run,
+    ...frames.flatMap(frame => Array<number>(HOLD[name] ?? 1).fill(frame)),
   ])
 }
 
@@ -99,7 +98,7 @@ function randomSlots(): number[] {
  * Notes:
  *     Each frame lists only the times its opacity changes, which keeps a long loop small.
  */
-function buildSvg(palette: string[], slots: number[]): string {
+function buildSvg(palette: readonly string[], slots: number[]): string {
   const swap = (body: string) =>
     CAT_PALETTE.reduce((out, color, i) => out.split(`"${color}"`).join(`"${palette[i]}"`), body)
   const total = slots.length
