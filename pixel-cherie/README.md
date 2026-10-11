@@ -62,7 +62,8 @@ Example `env` block with every pet:
 
 - **`pet.json`:** Describes the pet for the generated files.
 - **`hooks/register.tsx`:** Draws Cherie and picks the move order each turn.
-- **`hooks/moves.ts`:** Holds the 40 animation frames and the frames each move plays.
+- **`hooks/moves.ts`:** Holds the 240 animation frames and the frames each move plays.
+- **`hooks/frames_*.ts`:** Holds the frame data in parts, each small enough for the engine to read.
 - **`hooks/pets.ts`:** Picks the pet for each turn and reads `/pet`. Every pet mod keeps an identical copy.
 - **`types/index.d.ts`:** Declares the one value the mod keeps for the session.
 - **`tests/pets.test.ts`:** Checks the turn picker, `/pet` and the frame size.

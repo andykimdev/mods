@@ -7,19 +7,19 @@
   "moves": [
     {
       "name": "play",
-      "frames": 10
+      "frames": 60
     },
     {
       "name": "sit",
-      "frames": 10
+      "frames": 60
     },
     {
       "name": "rest",
-      "frames": 10
+      "frames": 60
     },
     {
       "name": "bunny",
-      "frames": 10
+      "frames": 60
     }
   ],
   "covers": [
@@ -43,5 +43,6 @@
       "Bunny",
       "bunny"
     ]
-  ]
+  ],
+  "frame_seconds": 0.2
 }
