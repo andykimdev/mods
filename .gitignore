@@ -7,3 +7,6 @@ node_modules/
 session-roles/
 sweep-watch/
 tokens/
+
+# Staging folders a frame build reads from, kept out of the repo.
+*/frames/*/
