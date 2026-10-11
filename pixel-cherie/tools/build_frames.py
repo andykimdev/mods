@@ -4,7 +4,7 @@ Build a pixel pet's frame module and preview SVGs from a folder of square pixel 
 Purpose:
 
 - Read each frame, remove the white background at the edge, and crop all frames to one box.
-- Merge the closest colors until every move fits one desktop Svg, then write the mod files.
+- Merge the closest colors until every frame fits one desktop Svg, then write the mod files.
 
 Special Notes:
 
@@ -21,9 +21,13 @@ from pathlib import Path
 # A cell this close to white and touching the frame edge is background.
 WHITE_MIN_SUM = 3 * 235
 
-# Matches register.tsx, so the preview plays at the same speed.
-HOLD = 3
+# The engine does not read a module file over 1,048,576 bytes, so frames go in files under this.
+CHUNK_BYTES = 900_000
+
+# Matches register.tsx, so the preview plays at the same speed. pet.json frame_seconds sets
+# how many slots each frame holds.
 FRAME_SECONDS = 0.1
+DEFAULT_FRAME_SECONDS = 0.3
 
 # The longest Svg source the desktop draws, and generous room for each frame's tags and the outer svg.
 SVG_SOURCE_LIMIT = 131_072
@@ -185,11 +189,11 @@ def encode(grid: Grid, palette: list[str]) -> str:
 
 def fit(grids: list[Grid], moves: list[list[int]]) -> tuple[list[Grid], list[str], list[tuple[str, str]]]:
     """
-    Merge the closest pair of colors, one pair at a time, until every move fits one Svg.
+    Merge the closest pair of colors, one pair at a time, until every frame fits one Svg.
 
     Args:
         grids: Frames as grids of hex colors.
-        moves: The frame indices of each move. register.tsx packs moves into Svgs per turn.
+        moves: The frame indices of each move. register.tsx packs frames into Svgs per turn.
 
     Returns:
         The frames after merging, the palette darkest first, and each merge as (from, into).
@@ -214,7 +218,7 @@ def fit(grids: list[Grid], moves: list[list[int]]) -> tuple[list[Grid], list[str
 
         palette = sorted(counts, key=brightness)
         sizes = [len(encode(g, palette)) + FRAME_OVERHEAD for g in grids]
-        total = max(sum(sizes[k] for k in move) + SVG_OVERHEAD for move in moves)
+        total = max(sizes[k] + SVG_OVERHEAD for move in moves for k in move)
 
         if total < SVG_SOURCE_LIMIT:
             return grids, palette, merges
@@ -280,6 +284,32 @@ def loop(frames: list[str], slots: list[int]) -> str:
     return "".join(groups)
 
 
+def chunks(frames: list[str]) -> list[list[str]]:
+    """
+    Split frames into consecutive groups whose module files stay under CHUNK_BYTES.
+
+    Args:
+        frames: Path elements of each frame.
+
+    Returns:
+        The groups, in order, never empty.
+    """
+    groups: list[list[str]] = [[]]
+    size = 0
+
+    for frame in frames:
+        cost = len(frame.encode()) + 6
+
+        if groups[-1] and size + cost > CHUNK_BYTES:
+            groups.append([])
+            size = 0
+
+        groups[-1].append(frame)
+        size += cost
+
+    return groups
+
+
 def build(source: Path, mod: Path) -> str:
     """
     Write hooks/moves.ts, one SVG per frame and frames/loop.svg for the pet in mod.
@@ -308,15 +338,29 @@ def build(source: Path, mod: Path) -> str:
     grids, palette, merges = fit(crop([remove_background(read_frame(p)) for p in paths]), list(indices.values()))
     height, width = len(grids[0]), len(grids[0][0])
     frames = [encode(g, palette) for g in grids]
-    rows = "".join(f"  '{f}',\n" for f in frames)
+    hooks = mod / "hooks"
+    hooks.mkdir(exist_ok=True)
 
-    (mod / "hooks").mkdir(exist_ok=True)
-    (mod / "hooks/moves.ts").write_text(
-        f"/**\n * The {mod.name} moves, as SVG frames and the order each move plays them.\n *\n"
-        " * Special Notes:\n *\n * - Written by tools/build_frames.py. Rebuild rather than edit.\n */\n\n"
-        f"export const {prefix}_WIDTH = {width}\nexport const {prefix}_HEIGHT = {height}\n\n"
-        "// Distinct frames, each one stroked path per color, drawn on rows offset by half a pixel.\n"
-        f"export const {prefix}_FRAMES = [\n{rows}]\n\n"
+    for old in hooks.glob("frames_*.ts"):
+        old.unlink()
+
+    groups = chunks(frames)
+    note = " *\n * Special Notes:\n *\n * - Written by tools/build_frames.py. Rebuild rather than edit.\n */\n\n"
+
+    for i, group in enumerate(groups):
+        rows = "".join(f"  '{f}',\n" for f in group)
+        (hooks / f"frames_{i}.ts").write_text(
+            f"/**\n * Frames of {mod.name}, part {i + 1} of {len(groups)}, each one stroked path per color.\n"
+            f"{note}export const FRAMES_{i} = [\n{rows}]\n"
+        )
+
+    imports = "".join(f"import {{ FRAMES_{i} }} from './frames_{i}'\n" for i in range(len(groups)))
+    spread = ", ".join(f"...FRAMES_{i}" for i in range(len(groups)))
+    (hooks / "moves.ts").write_text(
+        f"/**\n * The {mod.name} moves, as SVG frames and the order each move plays them.\n{note}"
+        f"{imports}\nexport const {prefix}_WIDTH = {width}\nexport const {prefix}_HEIGHT = {height}\n\n"
+        "// Distinct frames, drawn on rows offset by half a pixel, split across files the engine can read.\n"
+        f"export const {prefix}_FRAMES = [{spread}]\n\n"
         "// Each move is the list of frames it shows, one per slot.\n"
         f"export const {prefix}_MOVES: Record<string, number[]> = {json.dumps(indices)}\n"
     )
@@ -331,13 +375,15 @@ def build(source: Path, mod: Path) -> str:
         for i, k in enumerate(ks):
             (out / f"{name}_{i:02d}.svg").write_text(svg(width, height, frames[k], 10))
 
-    slots = [k for ks in indices.values() for k in ks for _ in range(HOLD)]
+    hold = max(1, round(spec.get("frame_seconds", DEFAULT_FRAME_SECONDS) / FRAME_SECONDS))
+    slots = [k for ks in indices.values() for k in ks for _ in range(hold)]
     (out / "loop.svg").write_text(svg(width, height, loop(frames, slots), 5))
-    size = max(sum(len(frames[k]) + FRAME_OVERHEAD for k in ks) + SVG_OVERHEAD for ks in indices.values())
+    size = max(len(f) for f in frames) + FRAME_OVERHEAD + SVG_OVERHEAD
+    pages = -(-sum(len(f) + FRAME_OVERHEAD for f in frames) // (SVG_SOURCE_LIMIT - SVG_OVERHEAD))
     merged = ", ".join(f"{a} into {b}" for a, b in merges) or "none"
 
-    return (f"{len(frames)} frames, {width} x {height}, {len(palette)} colors, "
-            f"largest move about {size} characters, merged {merged}")
+    return (f"{len(frames)} frames, {width} x {height}, {len(palette)} colors, largest frame about "
+            f"{size} characters, about {pages} Svg pages per cycle, merged {merged}")
 
 
 if __name__ == "__main__":

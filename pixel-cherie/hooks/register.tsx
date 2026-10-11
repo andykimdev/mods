@@ -4,7 +4,7 @@
  * Special Notes:
  *
  * - Each turn plays the moves in a fresh random order.
- * - Moves that do not all fit one Svg are split into pages, and a timer swaps the page when it ends.
+ * - Frames that do not all fit one Svg are split into pages, and a timer swaps the page when it ends.
  * - With other pet mods loaded, the turn id picks one pet per turn. See pets.ts.
  * - /pet sets which pet draws for the rest of the session.
  */
@@ -23,8 +23,8 @@ const lastTool = atom({ plugin: 'pixel-cherie', key: 'lastTool' } as const, null
 
 const FRAME_SECONDS = 0.1
 
-// Each frame is its own pose, so it holds for this many slots to be read.
-const HOLD = 3
+// Each frame holds for this many slots, from frame_seconds in pet.json.
+const HOLD = 2
 
 // The longest Svg source the desktop draws, and generous room for each frame's tags and the outer svg.
 const SVG_SOURCE_LIMIT = 131_072
@@ -44,35 +44,45 @@ function random(): number {
 }
 
 /**
- * Shuffle the moves and pack them, in that order, into pages that each fit one Svg.
+ * Shuffle the moves and pack their frames, in that order, into pages that each fit one Svg.
  *
  * Returns:
  *     Each page as the frame index shown in each of its slots.
  *
  * Notes:
- *     A pet whose frames all fit one Svg gets a single page, so nothing swaps.
+ *     A pet whose frames all fit one Svg gets a single page, so nothing swaps. A long move
+ *     carries on across pages, so it plays through without a break.
  */
 function randomPages(): number[][] {
-  const shuffled = Object.values(CHERIE_MOVES)
+  const order = Object.values(CHERIE_MOVES)
     .map(frames => ({ frames, key: random() }))
     .sort((a, b) => a.key - b.key)
-  const pages: number[][][] = []
+    .flatMap(({ frames }) => frames)
+  const pages: number[][] = []
+  let page: number[] = []
+  let drawn = new Set<number>()
   let size = SVG_OVERHEAD
 
-  for (const { frames } of shuffled) {
-    const cost = frames.reduce((sum, k) => sum + (CHERIE_FRAMES[k]?.length ?? 0) + FRAME_OVERHEAD, 0)
-    const last = pages[pages.length - 1]
+  for (const frame of order) {
+    const cost = (CHERIE_FRAMES[frame]?.length ?? 0) + FRAME_OVERHEAD
 
-    if (last && size + cost < SVG_SOURCE_LIMIT) {
-      last.push(frames)
-      size += cost
-    } else {
-      pages.push([frames])
-      size = SVG_OVERHEAD + cost
+    // A frame already on the page costs nothing more, since each frame is drawn once per Svg.
+    if (!drawn.has(frame) && page.length > 0 && size + cost >= SVG_SOURCE_LIMIT) {
+      pages.push(page)
+      page = []
+      drawn = new Set<number>()
+      size = SVG_OVERHEAD
     }
+
+    if (!drawn.has(frame)) {
+      size += cost
+      drawn.add(frame)
+    }
+
+    page.push(...Array<number>(HOLD).fill(frame))
   }
 
-  return pages.map(page => page.flatMap(frames => frames.flatMap(frame => Array<number>(HOLD).fill(frame))))
+  return [...pages, page]
 }
 
 /**

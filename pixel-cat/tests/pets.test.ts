@@ -1,5 +1,5 @@
 /**
- * Test how pixel-cat shares turns with other pets, the /pet choice, and that each move fits one Svg.
+ * Test how pixel-cat shares turns with other pets, the /pet choice, and that each frame fits one Svg.
  *
  * Special Notes:
  *
@@ -89,10 +89,9 @@ describe('hasPet', () => {
   })
 })
 
-test('every move fits one Svg source', async () => {
-  const sizes = Object.values(CAT_MOVES).map(move =>
-    move.reduce((sum, k) => sum + (CAT_FRAMES[k]?.length ?? 0) + FRAME_OVERHEAD, SVG_OVERHEAD),
-  )
+test('every frame of every move fits one Svg source', async () => {
+  const frames = Object.values(CAT_MOVES).flat()
+  const sizes = frames.map(k => (CAT_FRAMES[k]?.length ?? SVG_SOURCE_LIMIT) + FRAME_OVERHEAD + SVG_OVERHEAD)
 
   expect(sizes.filter(size => size >= SVG_SOURCE_LIMIT)).toEqual([])
 })
