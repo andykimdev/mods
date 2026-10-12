@@ -15,12 +15,13 @@ The desktop app still draws its own dots in the step header while a tool runs. M
 
 ## Choosing a pet
 
-With [pixel-cat](../pixel-cat) also loaded, each turn shows one of the loaded pets. Each mod works alone.
+With [pixel-cat](../pixel-cat) or [pixel-kitty](../pixel-kitty) also loaded, each turn shows one of the loaded pets. Each mod works alone.
 
 To choose for the rest of the session, type one of these in the desktop app:
 
 - **`/pet cat`:** Shows the cat every turn.
 - **`/pet cherie`:** Shows Cherie every turn.
+- **`/pet kitty`:** Shows the kittens every turn.
 - **`/pet random`:** Picks a pet each turn. This is the default.
 
 ## Requirements
@@ -42,7 +43,7 @@ Example `env` block with every pet:
 ```json
 {
   "env": {
-    "CLAUDE_CODE_PLUGIN_DIRS": "/Users/yourname/.claude/mods/pixel-cat:/Users/yourname/.claude/mods/pixel-cherie"
+    "CLAUDE_CODE_PLUGIN_DIRS": "/Users/yourname/.claude/mods/pixel-cat:/Users/yourname/.claude/mods/pixel-cherie:/Users/yourname/.claude/mods/pixel-kitty"
   }
 }
 ```
