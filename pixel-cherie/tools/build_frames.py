@@ -18,8 +18,19 @@ import re
 import sys
 from pathlib import Path
 
-# A cell this close to white and touching the frame edge is background.
+# Colors this close to white count as near-white. A near-white patch this small that touches
+# the background is edge fringe from tracing, while larger patches are white fur.
 WHITE_MIN_SUM = 3 * 235
+FRINGE_MAX_CELLS = 3
+WHITE = "#ffffff"
+
+# An enclosed blank pocket ringed mostly by dark outline is background showing between limbs,
+# while white fur is ringed mostly by light fur. Measured on pixel-kitty: background pockets
+# ran 0.74 to 0.80 dark and fur pockets at most 0.38. A smaller pocket in a dark ring is eye
+# shine, while the background pockets there held 36 cells or more.
+DARK_MAX_SUM = 300
+DARK_BORDER_SHARE = 0.6
+DARK_POCKET_MIN_CELLS = 10
 
 # The engine does not read a module file over 1,048,576 bytes, so frames go in files under this.
 CHUNK_BYTES = 900_000
@@ -89,36 +100,83 @@ def brightness(color: str) -> int:
     return sum(int(color[i:i + 2], 16) for i in (1, 3, 5))
 
 
-def remove_background(grid: Grid) -> Grid:
-    """
-    Clear the near-white cells connected to the frame edge.
-
-    Args:
-        grid: A row-major grid of hex colors.
-
-    Returns:
-        A copy with those cells set to None. White inside the drawing, such as eye shine, stays.
-    """
-    height, width = len(grid), len(grid[0])
-    out = [row[:] for row in grid]
-    stack = [(x, y) for y in range(height) for x in range(width)
-             if x in (0, width - 1) or y in (0, height - 1)]
-    seen = set()
+def flood(cells: set[tuple[int, int]], starts: list[tuple[int, int]]) -> set[tuple[int, int]]:
+    """Return the cells of a set reachable from the starts through four-way neighbors."""
+    seen: set[tuple[int, int]] = set()
+    stack = [s for s in starts if s in cells]
 
     while stack:
         x, y = stack.pop()
 
-        if (x, y) in seen or not (0 <= x < width and 0 <= y < height):
+        if (x, y) in seen:
             continue
 
         seen.add((x, y))
-        color = grid[y][x]
+        stack += [n for n in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)) if n in cells and n not in seen]
 
-        if color is not None and brightness(color) < WHITE_MIN_SUM:
-            continue
+    return seen
 
-        out[y][x] = None
-        stack += [(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)]
+
+def remove_background(grid: Grid) -> Grid:
+    """
+    Clear the background around the drawing and the tiny near-white fringe that touches it.
+
+    Args:
+        grid: A row-major grid of hex colors, None where nothing is drawn.
+
+    Returns:
+        A copy where the background is None. Undrawn or pure white cells the background does
+        not reach become white, since the white page showed through them as white fur.
+
+    Notes:
+        Undrawn and pure white cells are blank. The background spreads from the frame edge
+        only through blank cells with no drawn neighbor, so it cannot pass a gap of one or
+        two cells in the outline. It then takes the blank cells beside it, any thin blank
+        pocket that opens onto it, and any large enclosed pocket ringed mostly by dark outline.
+    """
+    height, width = len(grid), len(grid[0])
+    cells = [(x, y) for y in range(height) for x in range(width)]
+    blank = {(x, y) for x, y in cells if grid[y][x] in (None, WHITE)}
+
+    def around(x: int, y: int) -> list[tuple[int, int]]:
+        return [(x + dx, y + dy) for dx in (-1, 0, 1) for dy in (-1, 0, 1) if dx or dy]
+
+    def inside(c: tuple[int, int]) -> bool:
+        return 0 <= c[0] < width and 0 <= c[1] < height
+
+    core = {c for c in blank if all(n in blank or not inside(n) for n in around(*c))}
+    seeds = [c for c in blank if c[0] in (0, width - 1) or c[1] in (0, height - 1)]
+    reached = flood(core | set(seeds), seeds)
+    background = reached | {n for c in reached for n in around(*c) if n in blank}
+
+    rest = blank - background
+
+    while rest:
+        pocket = flood(rest, [next(iter(rest))])
+        rest -= pocket
+        opens = any(n in background for x, y in pocket for n in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)))
+
+        border = [grid[y + dy][x + dx] for x, y in pocket for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))
+                  if inside((x + dx, y + dy)) and (x + dx, y + dy) not in blank]
+        dark = sum(1 for c in border if c and brightness(c) < DARK_MAX_SUM)
+
+        ringed = len(pocket) >= DARK_POCKET_MIN_CELLS and border and dark / len(border) >= DARK_BORDER_SHARE
+
+        if (opens and not pocket & core) or ringed:
+            background |= pocket
+
+    out: Grid = [[None if (x, y) in background else (grid[y][x] or WHITE) for x in range(width)]
+                 for y in range(height)]
+    pale = {(x, y) for x, y in cells if out[y][x] and brightness(out[y][x]) >= WHITE_MIN_SUM}
+
+    while pale:
+        patch = flood(pale, [next(iter(pale))])
+        pale -= patch
+        touches = any(n in background for x, y in patch for n in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)))
+
+        if touches and len(patch) <= FRINGE_MAX_CELLS:
+            for x, y in patch:
+                out[y][x] = None
 
     return out
 
