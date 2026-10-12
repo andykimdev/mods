@@ -8,8 +8,8 @@
 
 import { FRAMES_0 } from './frames_0'
 
-export const KITTY_WIDTH = 68
-export const KITTY_HEIGHT = 52
+export const KITTY_WIDTH = 62
+export const KITTY_HEIGHT = 42
 
 // Distinct frames, drawn on rows offset by half a pixel, split across files the engine can read.
 export const KITTY_FRAMES = [...FRAMES_0]
