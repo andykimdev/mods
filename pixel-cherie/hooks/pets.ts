@@ -12,6 +12,7 @@
 export const PETS = [
   { mod: 'pixel-cat', word: 'cat', name: 'the cat' },
   { mod: 'pixel-cherie', word: 'cherie', name: 'Cherie' },
+  { mod: 'pixel-kitty', word: 'kitty', name: 'the kittens' },
 ] as const
 
 export type Pet = (typeof PETS)[number]['mod']

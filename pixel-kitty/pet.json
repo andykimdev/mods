@@ -1,0 +1,21 @@
+{
+  "mod": "pixel-kitty",
+  "word": "kitty",
+  "name": "the kittens",
+  "kind": "two dancing pixel kittens",
+  "summary": "dance side by side",
+  "moves": [
+    {
+      "name": "dance",
+      "frames": 39
+    }
+  ],
+  "frame_seconds": 0.1,
+  "covers": [
+    [
+      "dance_00",
+      "Dance",
+      "dance"
+    ]
+  ]
+}
