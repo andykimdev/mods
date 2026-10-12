@@ -53,7 +53,7 @@ Example `env` block with every pet:
 ## Development
 
 - **Tests:** Run `claude plugin test ~/.claude/mods/pixel-kitty`. Checks the turn picker, `/pet` and the frame size.
-- **Frames:** Run `python3 tools/build_frames.py <folder>` from `~/.claude/mods/pixel-kitty`. Rebuilds `hooks/moves.ts` and `frames/` from a folder of SVG frames.
+- **Frames:** Put your SVG frames in `frames/source/`, then run `python3 tools/build_frames.py frames/source` from `~/.claude/mods/pixel-kitty`. Rebuilds `hooks/moves.ts`, `hooks/frames_*.ts` and the previews in `frames/`.
 
 ## Files
 

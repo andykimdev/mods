@@ -47,6 +47,9 @@ SVG_OVERHEAD = 400
 
 PATH = re.compile(r'<path fill="(#[0-9a-fA-F]{6})" d="([^"]*)"\s*/>')
 
+# One filled cell rectangle drawn as its own rect element.
+RECT_TAG = re.compile(r'<rect x="(\d+)" y="(\d+)" width="(\d+)" height="(\d+)" fill="(#[0-9a-fA-F]{6})"\s*/>')
+
 # One filled rectangle: a move, a width, a height, then back to the start, with either separator.
 RECT = re.compile(r"M(\d+)[ ,](\d+)h(\d+)v(\d+)(?:H\d+|h-\d+)z")
 
@@ -58,8 +61,8 @@ def read_frame(path: Path) -> Grid:
     Read one SVG frame into a grid of colors.
 
     Args:
-        path: An SVG whose paths fill whole cells with rectangles, one path per rectangle or
-            many rectangles in one path, on an optional white background rect.
+        path: An SVG whose paths or rect elements fill whole cells with rectangles, one path
+            per rectangle or many rectangles in one path.
 
     Returns:
         A row-major grid of lowercase hex colors, None where nothing is drawn.
@@ -75,8 +78,9 @@ def read_frame(path: Path) -> Grid:
 
     width, height = int(box.group(1)), int(box.group(2))
     paths = PATH.findall(text)
+    tags = RECT_TAG.findall(text)
 
-    if len(paths) != text.count("<path") or re.search(r"<(?!\?xml|!--|svg|/svg|g|/g|path|rect)", text):
+    if len(paths) != text.count("<path") or len(tags) != text.count("<rect") or re.search(r"<(?!\?xml|!--|svg|/svg|g|/g|path|rect)", text):
         raise ValueError(f"{path}: holds shapes other than filled paths")
 
     grid: Grid = [[None] * width for _ in range(height)]
@@ -91,6 +95,11 @@ def read_frame(path: Path) -> Grid:
             for row in range(int(y), int(y) + int(h)):
                 for col in range(int(x), int(x) + int(w)):
                     grid[row][col] = color.lower()
+
+    for x, y, w, h, color in tags:
+        for row in range(int(y), int(y) + int(h)):
+            for col in range(int(x), int(x) + int(w)):
+                grid[row][col] = color.lower()
 
     return grid
 
